@@ -1,0 +1,34 @@
+{
+    "phantomjs": {
+        "args": [
+            "--ignore-ssl-errors=true",
+            "--disk-cache=true",
+            "--max-disk-cache-size=50000000",
+            "--load-images=false"
+        ],
+        "port": 25570,
+        "auto_restart": true
+    },
+    "puppeteer": {
+        "port": 22229,
+        "auto_restart": true
+    },
+    "webui": {
+        "port": 5001,
+        "host": "0.0.0.0",
+        "username": "",
+        "password": "",
+        "need_auth": false
+    },
+    "scheduler": {
+        "xmlrpc_port": 23334,
+        "xmlrpc_host": "127.0.0.1"
+    },
+    "fetcher": {
+        "xmlrpc_port": 24445,
+        "xmlrpc_host": "127.0.0.1"
+    },
+    "database": {
+        "url": "sqlite:///data/pyspider.db"
+    }
+}

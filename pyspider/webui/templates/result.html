@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Results - {{ project }} - pyspider</title>
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <meta name="description" content="results of {{ project }}">
+    <meta name="author" content="binux">
+    <link href="{{ url_for('cdn', path='bootstrap/5.3.3/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('cdn', path='font-awesome/6.5.1/css/all.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='result.min.css') }}" rel="stylesheet">
+
+    <script src="{{ url_for('cdn', path='jquery/3.7.1/jquery.min.js') }}"></script>
+    <script src="{{ url_for('cdn', path='bootstrap/5.3.3/js/bootstrap.bundle.min.js') }}"></script>
+  </head>
+
+  <body>
+    <div class="top-bar">
+      <h1>{{ project }} - Results</h1>
+      <div class="btn-group">
+        <a href="/results/dump/{{ project }}.json"
+          target="_blank" class="btn btn-default btn-sm">
+          <i class="fa-solid fa-download"></i>
+          JSON</a>
+        <a href="/results/dump/{{ project }}.txt"
+          target="_blank" class="btn btn-outline-secondary btn-sm">URL-JSON</a>
+        <a href="/results/dump/{{ project }}.csv"
+          target="_blank" class="btn btn-outline-secondary btn-sm">CSV</a>
+      </div>
+    </div>
+    # set common_fields, results = result_formater(results)
+    <table class="table table-sm table-striped">
+      <thead>
+        <th>url</th>
+        <th></th>
+        # for field in common_fields|sort
+        <th>
+          {{ field }}
+        </th>
+        # endfor
+        <th>
+          ...
+        </th>
+      </thead>
+      <tbody>
+        # for result in results
+        <tr>
+          <td>
+            <a class=url href="/task/{{ project }}:{{ result.taskid }}" target=_blank>{{ result.url }}</a>
+          </td>
+          <td>
+            <a class=open-url href="{{ result.url }}" target="_blank"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          </td>
+          # for field in common_fields|sort
+          <td>{{ json.dumps(result.result_formated[field], ensure_ascii=False) | truncate(100, True) }}</td>
+          # endfor
+          <td>
+            {{ json.dumps(result.others, ensure_ascii=False) | truncate(100, True) }}
+          </td>
+        # endfor
+      </tbody>
+    </table>
+
+    <div class="pagination-wrap">
+      <nav aria-label="Page navigation">
+        <ul class="pagination">
+          # set current_page = int(offset/limit) + (1 if offset%limit else 0)
+          # set count = count if count is not none else 0
+          # set total_page = int(count/limit) + (1 if count%limit else 0)
+          <li class="page-item {{ "disabled" if current_page - 1 <= 0 else "" }}">
+            <a class="page-link" href="{% if current_page>1 %}/results?project={{ project }}&offset={{ (current_page-1)*limit }}&limit={{ limit }}{% endif %}" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+          # set prev = 0
+          # for i in range(0, total_page):
+          # if abs(i-0) < 2 or abs(i-total_page) < 3 or -2 < i-current_page < 5:
+            # set prev = i
+            <li class="page-item {% if i == current_page %}active{% endif %}">
+              <a class="page-link" href="/results?project={{ project }}&offset={{ i*limit }}&limit={{ limit }}">{{ i + 1 }}</a>
+            </li>
+          # elif prev == i-1:
+            <li class="page-item disabled"><a class="page-link">…</a></li>
+          # endif
+          # endfor
+          <li class="page-item {{ "disabled" if current_page + 1 >= total_page else "" }}">
+            <a class="page-link" href="{% if current_page+1<total_page %}/results?project={{ project }}&offset={{ (current_page+1)*limit }}&limit={{ limit }}{% endif %}" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </body>
+</html>

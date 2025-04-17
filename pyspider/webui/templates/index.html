@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Dashboard - pyspider</title>
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <meta name="description" content="pyspider dashboard">
+    <meta name="author" content="binux">
+    <link href="{{ url_for('cdn', path='bootstrap/5.3.3/css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('cdn', path='font-awesome/6.5.1/css/all.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('cdn', path='sortable/0.6.0/css/sortable-theme-bootstrap.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='index.min.css') }}" rel="stylesheet">
+
+    <script src="{{ url_for('cdn', path='jquery/3.7.1/jquery.min.js') }}"></script>
+  </head>
+
+  <body>
+    <header>
+      <div id="need-set-status-alert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="alert">
+        <i class="fa-solid fa-triangle-exclamation"></i> Project is not started, please set status to RUNNING or DEBUG.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+      <h1>pyspider dashboard</h1>
+      <table class="table queue-info">
+        <tr>
+          <th>scheduler</th>
+          <td class="queue_value" title="scheduler2fetcher">???</td>
+          <th>fetcher</th>
+          <td class="queue_value" title="fetcher2processor">???</td>
+          <th>processor</th>
+          <td class="queue_value" title="processor2result">???</td>
+          <th>result_worker</th>
+        </tr>
+        <tr>
+          <td style="border-width: 0px 1px;"></td>
+          <td colspan=3></td>
+          <td style="border-width: 0px 1px;"></td>
+          <td colspan=2 style="border-width: 0px;"></td>
+        </tr>
+        <tr>
+          <td style="border-width: 0px 0px 1px 1px"></td>
+          <td colspan=3 style="border-width: 1px 0px;">
+            <span class="queue_value" title="newtask_queue">???</span>
+            + <span class="queue_value" title="status_queue">???</span>
+          </td>
+          <td style="border-width: 0px 1px 1px 0px;"></td>
+          <td colspan=2 style="border-width: 0px;"></td>
+        </tr>
+      </table>
+    </header>
+    <section>
+      <div class="global-btn clearfix">
+        <div class="create-btn-div">
+          <button class="project-create btn btn-primary" data-bs-toggle="modal" data-bs-target="#create-project-modal">Create</button>
+        </div>
+
+        <div class="active-btn-div">
+          {% if config.scheduler_rpc is not none %}
+            <a class="btn btn-default btn-info" href='/tasks' target=_blank>Recent Active Tasks</a>
+          {% endif %}
+        </div>
+
+        <div class="modal fade" id="create-project-modal">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Create New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <form class="form-horizontal" method="POST">
+                <div class="modal-body">
+                  <div class="form-group">
+                    <label class="col-sm-3 control-label" for="project-name">Project Name</label>
+                    <div class="col-sm-9">
+                      <input class="form-control" type="text" name="project-name" autocomplete="off">
+                      <span class="help-block" style="display: none;">[a-zA-Z0-9_]+</span>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="col-sm-3 control-label" for="start-urls">Start URL(s)</label>
+                    <div class="col-sm-9">
+                      <input class="form-control" type="text" name="start-urls">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="col-sm-3 control-label" for="script-mode">Mode</label>
+                    <div class="col-sm-9">
+                      <div class="btn-group" role="group" aria-label="Script mode">
+                        <input type="radio" class="btn-check" name="script-mode" id="mode-script" autocomplete="off" value="script" checked>
+                        <label class="btn btn-outline-primary" for="mode-script">Script</label>
+                        <input type="radio" class="btn-check" name="script-mode" id="mode-slime" autocomplete="off" value="slime">
+                        <label class="btn btn-outline-primary" for="mode-slime">Slime</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                  <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <table class="table sortable-theme-bootstrap projects">
+        <thead>
+          <tr>
+            <th>group</th>
+            <th>project name</th>
+            <th>status</th>
+            <th data-type="num">rate/burst</th>
+            <th data-type="num">avg time</th>
+            <th class="project-progress" data-type="num">&nbsp;<span>progress</span></th>
+            <th data-type="num">&nbsp;</th>
+            <th data-type="num">&nbsp;</th>
+            <th data-type="num">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th data-type="num">actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- React will render projects here -->
+        </tbody>
+      </table>
+    </section>
+    <script>
+      // json projects data for vue
+      var projects = {{ projects | tojson | safe }};
+    </script>
+    <script src="{{ url_for('cdn', path='bootstrap/5.3.3/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('cdn', path='sortable/0.6.0/js/sortable.min.js') }}"></script>
+    <script src="{{ url_for('cdn', path='react/18.2.0/umd/react.production.min.js') }}"></script>
+    <script src="{{ url_for('cdn', path='react-dom/18.2.0/umd/react-dom.production.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='index.min.js') }}"></script>
+  </body>
+</html>
+<!-- vim: set et sw=2 ts=2 sts=2 ff=unix fenc=utf8 syntax=htmldjango: -->
+
