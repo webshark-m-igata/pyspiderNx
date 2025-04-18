@@ -17,6 +17,14 @@
     <!-- Font Awesome 6 (latest) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='index.min.css') }}" rel="stylesheet">
+    <style>
+      /* Custom styles for avg-time-value */
+      .avg-time-value {
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+      }
+    </style>
 
     <!-- jQuery 3.7.1 (latest stable) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -128,7 +136,7 @@
         </thead>
         <tbody>
         {% raw %}
-          <tr v-cloak v-for="project in projects" :data-name="project.name">
+          <tr v-cloak v-for="project in projects" :data-name="project.name" :data-id="project.name" :class="'project ' + project.status">
             <td class="project-group"><span>{{ project.group }}</span></td>
             <td class="project-name"><a :href="'/debug/' + project.name" v-once>{{ project.name }}</a></td>
             <td class="project-status">
@@ -137,24 +145,43 @@
               </span>
             </td>
             <td class="project-rate" :data-value="project.rate"><span>{{ project.rate }}/{{ project.burst }}</span></td>
-            <td class="project-time" :data-value="project.time.fetch_time + project.time.process_time">
-              <span v-show="project.time.fetch_time">{{ (project.time.fetch_time * 1000).toFixed(1) }}+{{ (project.time.process_time * 1000).toFixed(2) }}</span>
+            <td class="project-time" :data-value="project.time && project.time.fetch_time ? project.time.fetch_time + project.time.process_time : 0">
+              <span class="avg-time-value">{{ project.time && project.time.fetch_time ? ((project.time.fetch_time * 1000).toFixed(1) + '+' + (project.time.process_time * 1000).toFixed(2)) : '0.0+0.00' }}</span>
             </td>
-            <td v-for="type in '5m,1h,1d,all'.split(',')"
-                :class="'project-progress progress-' + type"
-                :title="project.progress[type].title"
-                :data-value="project.progress[type].task">
+            <td class="project-progress progress-5m" title="" data-value="0">
               <div class="progress">
-                <div class="progress-text">{{ type }}<span v-show="project.progress[type].task">: {{ project.progress[type].task }}</span></div>
-                <div class="progress-bar progress-pending"
-                     :style="{ width: project.progress[type].pending/project.progress[type].task*100 + '%' }"></div>
-                <div class="progress-bar progress-bar-success progress-success"
-                     :style="{ width: project.progress[type].success/project.progress[type].task*100 + '%' }"></div>
-                <div class="progress-bar progress-bar-warning progress-retry"
-                     :style="{ width: project.progress[type].retry/project.progress[type].task*100 + '%' }"></div>
-                <div class="progress-bar progress-bar-danger progress-failed"
-                     :style="{ width: project.progress[type].failed/project.progress[type].task*100 + '%' }"
-                ></div>
+                <div class="progress-text">5m</div>
+                <div class="progress-bar progress-pending" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-success progress-success" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-warning progress-retry" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-danger progress-failed" style="width: 0%"></div>
+              </div>
+            </td>
+            <td class="project-progress progress-1h" title="" data-value="0">
+              <div class="progress">
+                <div class="progress-text">1h</div>
+                <div class="progress-bar progress-pending" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-success progress-success" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-warning progress-retry" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-danger progress-failed" style="width: 0%"></div>
+              </div>
+            </td>
+            <td class="project-progress progress-1d" title="" data-value="0">
+              <div class="progress">
+                <div class="progress-text">1d</div>
+                <div class="progress-bar progress-pending" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-success progress-success" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-warning progress-retry" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-danger progress-failed" style="width: 0%"></div>
+              </div>
+            </td>
+            <td class="project-progress progress-all" title="" data-value="0">
+              <div class="progress">
+                <div class="progress-text">all</div>
+                <div class="progress-bar progress-pending" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-success progress-success" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-warning progress-retry" style="width: 0%"></div>
+                <div class="progress-bar progress-bar-danger progress-failed" style="width: 0%"></div>
               </div>
             </td>
             {% endraw %}
@@ -164,7 +191,7 @@
               {% endraw %}
               # if config.scheduler_rpc is not none:
               {% raw %}
-              <button class="project-run btn btn-default btn-xs">Run</button>
+              <a :href="'/run?project=' + project.name" class="btn btn-default btn-xs">Run</a>
               <a class="btn btn-default btn-xs" :href="'/tasks?project=' + project.name" target=_blank>Active Tasks</a>
               {% endraw %}
               # endif
@@ -202,8 +229,8 @@
         }
       };
     </script>
-    <!-- Vue.js 3 -->
-    <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.js"></script>
+    <!-- Vue.js 3 (production build) -->
+    <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.prod.js"></script>
     <!-- Vue.js 1 script -->
     <!-- <script src="{{ url_for('static', filename='index.min.js') }}"></script> -->
     <!-- Vue.js 3 script -->

@@ -72,64 +72,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
         $this.addClass('btn-warning');
 
-        // Check if project status is not RUNNING or DEBUG
-        if (project.status !== 'RUNNING' && project.status !== 'DEBUG') {
-          // Remove any existing alert
-          $('#need-set-status-alert').remove();
+        // Note: Status check is now done on the server side
 
-          // Create a new alert element
-          const alertHtml = `
-            <div id="need-set-status-alert" class="alert alert-danger alert-dismissible" role="alert">
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              Project is not started, please set status to RUNNING or DEBUG.
-            </div>
-          `;
+        console.log('Sending AJAX request for project:', project.name);
 
-          // Add the alert to the header
-          $('header').prepend(alertHtml);
+        // Use AJAX to send the request
+        $.ajax({
+          type: 'POST',
+          url: '/run',
+          data: {
+            project: project.name,
+            webdav_mode: 'false'
+          },
+          success: function(data) {
+            console.log('Run request successful:', data);
+            $this.removeClass('btn-warning').addClass('btn-success');
+            setTimeout(function() {
+              $this.removeClass('btn-success');
+            }, 1000);
 
-          // Show the alert
-          $('#need-set-status-alert').fadeIn();
+            // Redirect to the result page
+            window.location.href = '/run_result?project=' + encodeURIComponent(project.name) + '&result=true';
+          },
+          error: function(xhr, status, error) {
+            console.error('Run request failed:', status, error);
+            $this.removeClass('btn-warning').addClass('btn-danger');
+            setTimeout(function() {
+              $this.removeClass('btn-danger');
+            }, 1000);
 
-          // Remove warning class and add danger class
-          $this.removeClass('btn-warning').addClass('btn-danger');
-          setTimeout(function() {
-            $this.removeClass('btn-danger');
-          }, 1000);
-          return;
-        }
-
-        console.log('Creating form for POST submission for project:', project.name);
-
-        // Create a form element
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/run';
-        form.style.display = 'none';
-
-        // Add project name input
-        const projectInput = document.createElement('input');
-        projectInput.type = 'hidden';
-        projectInput.name = 'project';
-        projectInput.value = project.name;
-        form.appendChild(projectInput);
-
-        // Add webdav_mode input
-        const webdavInput = document.createElement('input');
-        webdavInput.type = 'hidden';
-        webdavInput.name = 'webdav_mode';
-        webdavInput.value = 'false';
-        form.appendChild(webdavInput);
-
-        // Add the form to the document and submit it
-        document.body.appendChild(form);
-        form.submit();
-
-        // Show success indicator
-        $this.removeClass('btn-warning').addClass('btn-success');
-        setTimeout(function() {
-          $this.removeClass('btn-success');
-        }, 1000);
+            // Redirect to the result page with error
+            window.location.href = '/run_result?project=' + encodeURIComponent(project.name) + '&result=false&error=' + encodeURIComponent(error || 'Unknown error');
+          }
+        });
       },
 
       initEditable() {
@@ -293,29 +268,93 @@ document.addEventListener('DOMContentLoaded', function() {
         const updateCounters = () => {
           // Update project counters
           $.get("/counter", (data) => {
+            console.log('Counter data received:', data);
+
+            // Direct DOM manipulation for progress bars
             for (let project in data) {
               const counter = data[project];
-              if (this.projects[project] !== undefined) {
-                const types = "5m,1h,1d,all".split(",");
-                let needsUpdate = true;
+              console.log('Project:', project, 'Counter:', counter);
 
-                for (let i = 0; i < types.length; i++) {
-                  const type = types[i];
-                  if (counter[type] === undefined) {
-                    needsUpdate = false;
-                    break;
-                  }
-                }
-
-                if (needsUpdate) {
-                  for (let i = 0; i < types.length; i++) {
-                    const type = types[i];
-                    this.projects[project].progress[type] = counter[type];
-                  }
-                }
+              // Find the project row by data-id or data-name
+              console.log('Looking for project row with data-id or data-name:', project);
+              console.log('All project rows:', $('.project').length);
+              $('.project').each(function() {
+                console.log('Project row:', $(this).attr('data-id') || $(this).attr('data-name'), $(this));
+              });
+              let $projectRow = $(`.project[data-id="${project}"]`);
+              if ($projectRow.length === 0) {
+                $projectRow = $(`.project[data-name="${project}"]`);
               }
+              console.log('Found project row:', $projectRow.length, $projectRow[0]);
+              if ($projectRow.length === 0) {
+                console.log('Project row not found in DOM:', project);
+                continue;
+              }
+
+              // Update progress bars for each type
+              const types = "5m,1h,1d,all".split(",");
+              for (let i = 0; i < types.length; i++) {
+                const type = types[i];
+                if (!counter[type]) {
+                  console.log('No counter data for type:', type);
+                  continue;
+                }
+
+                // Find the progress cell
+                const $progressCell = $projectRow.find(`.progress-${type}`);
+                console.log('Progress cell for', type, ':', $progressCell.length, $progressCell[0]);
+                if ($progressCell.length === 0) {
+                  console.log('Progress cell not found for type:', type);
+                  continue;
+                }
+
+                // Get counter data
+                const pending = counter[type].pending || 0;
+                const success = counter[type].success || 0;
+                const retry = counter[type].retry || 0;
+                const failed = counter[type].failed || 0;
+                const task = counter[type].task || (pending + success + retry + failed);
+                const title = counter[type].title || `pending: ${pending}, success: ${success}, retry: ${retry}, failed: ${failed}`;
+
+                console.log('Counter data for', project, type, ':', {
+                  pending, success, retry, failed, task, title
+                });
+
+                // Update data attributes
+                $progressCell.attr('data-value', task);
+                $progressCell.attr('title', title);
+
+                // Update progress text
+                $progressCell.find('.progress-text').html(`${type}${task > 0 ? ': ' + task : ''}`);
+
+                // Calculate percentages
+                const pendingPercent = task > 0 ? (pending / task * 100) : 0;
+                const successPercent = task > 0 ? (success / task * 100) : 0;
+                const retryPercent = task > 0 ? (retry / task * 100) : 0;
+                const failedPercent = task > 0 ? (failed / task * 100) : 0;
+
+                console.log('Calculated percentages for', project, type, ':', {
+                  pending: pendingPercent + '%',
+                  success: successPercent + '%',
+                  retry: retryPercent + '%',
+                  failed: failedPercent + '%'
+                });
+
+                // Update progress bars
+                $progressCell.find('.progress-pending').css('width', pendingPercent + '%');
+                $progressCell.find('.progress-success').css('width', successPercent + '%');
+                $progressCell.find('.progress-retry').css('width', retryPercent + '%');
+                $progressCell.find('.progress-failed').css('width', failedPercent + '%');
+
+                console.log('Updated progress bars for', project, type);
+              }
+
+              // Avg time is updated separately in updateAvgTime method
             }
           });
+
+          // Update avg time
+          this.updateAvgTime();
 
           // Update queue information
           $.get("/queues", (data) => {
@@ -324,9 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
           });
 
-          setTimeout(updateCounters, 5000);
+          // Schedule the next update
+          setTimeout(updateCounters, 2000);
         };
 
+        // Start the update loop
         updateCounters();
       },
 
@@ -350,21 +391,58 @@ document.addEventListener('DOMContentLoaded', function() {
       },
 
       bindRunButtons() {
-        const self = this;
-        // Use jQuery to bind click events to run buttons
-        $(document).on('click', '.project-run', function(event) {
-          event.preventDefault();
-          const $button = $(this);
-          const projectName = $button.closest('tr').data('name');
-          const project = self.projects[projectName];
+        // No longer needed as we're using direct form submission
+        // This method is kept for compatibility
+        console.log('bindRunButtons: Using direct form submission instead of jQuery binding');
+      },
 
-          if (project) {
-            console.log('jQuery binding: Run button clicked for project:', projectName);
-            self.project_run(project, event);
-          } else {
-            console.error('Project not found:', projectName);
+      updateAvgTime() {
+        console.log('Updating avg time for all projects');
+
+        // Loop through all projects
+        for (let projectName in this.projects) {
+          const project = this.projects[projectName];
+          if (!project.time) {
+            console.log('No time data for project:', projectName);
+            continue;
           }
-        });
+
+          // Find the project row
+          const $projectRow = $(`.project[data-name="${projectName}"]`);
+          if ($projectRow.length === 0) {
+            console.log('Project row not found for avg time update:', projectName);
+            continue;
+          }
+
+          // Find the time cell
+          const $timeCell = $projectRow.find('.project-time');
+          if ($timeCell.length === 0) {
+            console.log('Time cell not found for project:', projectName);
+            continue;
+          }
+
+          // Get time data
+          const fetchTime = project.time.fetch_time || 0;
+          const processTime = project.time.process_time || 0;
+          const totalTime = fetchTime + processTime;
+
+          console.log('Time data for', projectName, ':', {
+            fetchTime, processTime, totalTime
+          });
+
+          // Update data-value attribute
+          $timeCell.attr('data-value', totalTime);
+
+          // Update text content directly
+          // Format: fetch_time+process_time (in milliseconds)
+          const fetchTimeMs = (fetchTime * 1000).toFixed(1);
+          const processTimeMs = (processTime * 1000).toFixed(2);
+          const timeText = `${fetchTimeMs}+${processTimeMs}`;
+          console.log('Setting time text to:', timeText);
+          $timeCell.find('.avg-time-value').text(timeText);
+
+          console.log('Updated avg time for', projectName);
+        }
       }
     }
   });
