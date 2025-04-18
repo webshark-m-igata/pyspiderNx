@@ -55,17 +55,8 @@ class QuitableFlask(Flask):
             from werkzeug.debug import DebuggedApplication
             application = DebuggedApplication(application, True)
 
-        try:
-            from .webdav import dav_app
-        except ImportError as e:
-            logger.warning('WebDav interface not enabled: %r', e)
-            dav_app = None
-        if dav_app:
-            # Python 3.13 compatibility: import DispatcherMiddleware from werkzeug.middleware.dispatcher
-            from werkzeug.middleware.dispatcher import DispatcherMiddleware
-            application = DispatcherMiddleware(application, {
-                '/dav': dav_app
-            })
+        # WebDAV mode has been removed
+        logger.info('WebDAV mode has been removed')
 
         container = tornado.wsgi.WSGIContainer(application)
         self.http_server = tornado.httpserver.HTTPServer(container)

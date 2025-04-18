@@ -95,21 +95,7 @@ def run(project):
         'script': request.form['script'],
     }
 
-    if request.form.get('webdav_mode') == 'true':
-        projectdb = app.config['projectdb']
-        info = projectdb.get(project, fields=['name', 'script'])
-        if not info:
-            result = {
-                'fetch_result': "",
-                'logs': u' in wevdav mode, cannot load script',
-                'follows': [],
-                'messages': [],
-                'result': None,
-                'time': time.time() - start_time,
-            }
-            return json.dumps(utils.unicode_obj(result)), \
-                200, {'Content-Type': 'application/json'}
-        project_info['script'] = info['script']
+    # WebDAV mode has been removed
 
     fetch_result = {}
     try:

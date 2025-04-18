@@ -30,7 +30,6 @@ install_requires = [
     'click>=8.1.7',
     'six>=1.16.0',
     'tblib>=3.0.0',
-    'wsgidav>=4.3.0',
     'tornado>=6.3.3',
     'pyquery>=2.0.0',
 ]
@@ -94,7 +93,6 @@ setup(
             'Werkzeug>=3.0.1',
             'httpbin>=0.10.0',
             'pyproxy>=0.1.6',
-            'easywebdav>=1.2.0',
         ]
     },
 

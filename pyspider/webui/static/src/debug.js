@@ -431,9 +431,7 @@ window.Debugger = (function() {
           $(this).height(0);
         }
       });
-      $('.webdav-btn').on('click', function() {
-        _this.toggle_webdav_mode(this);
-      })
+      // WebDAV mode has been removed
     },
 
     render_html: function(html, base_url, block_script=true, block_iframe=true) {
@@ -478,8 +476,7 @@ window.Debugger = (function() {
         type: "POST",
         url: location.pathname+'/run',
         data: {
-          webdav_mode: _this.webdav_mode,
-          script: _this.webdav_mode ? '' : script,
+          script: script,
           task: task
         },
         success: function(data) {
@@ -583,43 +580,7 @@ window.Debugger = (function() {
       }
     },
 
-    webdav_mode: false,
-    toggle_webdav_mode: function(button) {
-      if (!this.webdav_mode) {
-        if (this.not_saved) {
-            if (!confirm("You have not saved changes. Ignore changes and switch to WebDav mode.")) {
-            return;
-          }
-          this.not_saved = false;
-        }
-        this.python_editor_elem.hide();
-        this.splitter.trigger('fullsize', 'prev');
-        $(button).addClass('active');
-        this.webdav_mode = !this.webdav_mode;
-      } else {
-        // leaving webdav mode, reload script
-        var _this = this;
-        $.ajax({
-          type: "GET",
-          url: location.pathname + '/get',
-          success: function (data) {
-            _this.splitter.trigger('init');
-            _this.python_editor_elem.show();
-            _this.python_editor.setValue(data.script);
-            _this.not_saved = false;
-            $(button).removeClass('active');
-            _this.webdav_mode = !_this.webdav_mode;
-          },
-          error: function() {
-            alert('Loading script from database error. Script may out-of-date.');
-            _this.python_editor_elem.show();
-            _this.splitter.trigger('init');
-            $(button).removeClass('active');
-            _this.webdav_mode = !_this.webdav_mode;
-          },
-        });
-      }
-    },
+    // WebDAV mode has been removed
   };
 })();
 
