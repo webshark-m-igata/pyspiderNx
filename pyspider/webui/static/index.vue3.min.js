@@ -63,8 +63,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check if project status is not RUNNING or DEBUG
         if (project.status !== 'RUNNING' && project.status !== 'DEBUG') {
-          // Show alert
+          // Remove any existing alert
+          $('#need-set-status-alert').remove();
+
+          // Create a new alert element
+          const alertHtml = `
+            <div id="need-set-status-alert" class="alert alert-danger alert-dismissible" role="alert">
+              <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              Project is not started, please set status to RUNNING or DEBUG.
+            </div>
+          `;
+
+          // Add the alert to the header
+          $('header').prepend(alertHtml);
+
+          // Show the alert
           $('#need-set-status-alert').fadeIn();
+
           // Remove warning class and add danger class
           $this.removeClass('btn-warning').addClass('btn-danger');
           setTimeout(function() {
