@@ -222,8 +222,15 @@ def new_project():
     if not projectdb.verify_project_name(project_name):
         return 'project name is not allowed!', 400
 
-    if projectdb.get(project_name):
-        return 'project already exists!', 400
+    # プロジェクト名が既に存在する場合、一意になるように番号を追加
+    original_name = project_name
+    counter = 1
+    while projectdb.get(project_name):
+        project_name = f"{original_name}_{counter}"
+        counter += 1
+        # 新しい名前が検証に合格するか確認
+        if not projectdb.verify_project_name(project_name):
+            return 'generated project name is not allowed!', 400
 
     script = (default_script
               .replace('__DATE__', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
@@ -238,6 +245,10 @@ def new_project():
         'burst': app.config.get('max_burst', 3),
     }
     projectdb.insert(project_name, info)
+    
+    # 元の名前と異なる場合はユーザーに通知するためにフラッシュメッセージを設定
+    if original_name != project_name:
+        app.logger.info(f'Project name changed from {original_name} to {project_name} to avoid duplication')
 
     rpc = app.config['scheduler_rpc']
     if rpc is not None:
