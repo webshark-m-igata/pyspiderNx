@@ -205,15 +205,16 @@
             {% raw %}
             <td class="project-actions" data-value="{{ project.updatetime }}">
               {% endraw %}
-              # if config.scheduler_rpc is not none:
+              {% if config.scheduler_rpc is not none %}
               {% raw %}
               <a :href="'/run?project=' + project.name" class="btn btn-default btn-xs">Run</a>
               <a class="btn btn-default btn-xs" :href="'/tasks?project=' + project.name" target=_blank>Active Tasks</a>
               {% endraw %}
-              # endif
-              ts</a>
+              {% endif %}
+              {% raw %}
+              <a class="btn btn-default btn-xs" :href="'/results?project=' + project.name" target=_blank>Results</a>
               {% endraw %}
-              # endif
+              {% endif %}
             </td>
           </tr>
         </tbody>

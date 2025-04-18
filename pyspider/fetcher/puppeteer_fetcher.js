@@ -1,8 +1,8 @@
 const express = require('express');
 const app = express();
 
-// Get port from environment variable or use default
-const port = process.env.PUPPETEER_FETCHER_PORT || 22222;
+// Get port from environment variable, command line argument, or use default
+const port = process.env.PUPPETEER_FETCHER_PORT || process.argv[2] || 22222;
 
 app.listen(port, () => {
     console.log(`Server started on port ${port}`);
