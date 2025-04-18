@@ -1,5 +1,24 @@
 {
+    "taskdb": "sqlite+taskdb:///data/task.db",
+    "projectdb": "sqlite+projectdb:///data/project.db",
+    "resultdb": "sqlite+resultdb:///data/result.db",
     "phantomjs": {
-        "args": ["--ignore-ssl-errors=true"]
+        "args": ["--ignore-ssl-errors=true"],
+        "port": 25559
+    },
+    "puppeteer": {
+        "port": 22228
+    },
+    "webui": {
+        "port": 5000,
+        "username": "",
+        "password": "",
+        "need-auth": false
+    },
+    "scheduler": {
+        "xmlrpc_port": 23334
+    },
+    "fetcher": {
+        "xmlrpc_port": 24445
     }
 }

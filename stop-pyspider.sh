@@ -15,7 +15,7 @@ for port in $PHANTOMJS_PORT $PUPPETEER_PORT $WEBUI_PORT $SCHEDULER_PORT $FETCHER
         kill -9 $pid
     fi
 done
-a
+
 # pyspiderプロセスを終了
 pyspider_pids=$(pgrep -f "pyspider")
 if [ ! -z "$pyspider_pids" ]; then
@@ -23,4 +23,4 @@ if [ ! -z "$pyspider_pids" ]; then
     kill -9 $pyspider_pids
 fi
 
-echo "すべてのプロセスを終了しました" 
+echo "すべてのプロセスを終了しました"
