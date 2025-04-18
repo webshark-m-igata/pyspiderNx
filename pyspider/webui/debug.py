@@ -245,10 +245,16 @@ def new_project():
         'burst': app.config.get('max_burst', 3),
     }
     projectdb.insert(project_name, info)
-    
+
     # 元の名前と異なる場合はユーザーに通知するためにフラッシュメッセージを設定
     if original_name != project_name:
         app.logger.info(f'Project name changed from {original_name} to {project_name} to avoid duplication')
+        # フラッシュメッセージをセッションに追加（Flaskのflashを使用）
+        try:
+            from flask import flash
+            flash(f'プロジェクト名が重複しているため、{original_name}から{project_name}に変更されました。', 'warning')
+        except Exception as e:
+            app.logger.error(f'Failed to set flash message: {e}')
 
     rpc = app.config['scheduler_rpc']
     if rpc is not None:
