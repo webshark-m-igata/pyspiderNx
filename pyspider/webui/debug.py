@@ -12,7 +12,7 @@ import socket
 import inspect
 import datetime
 import traceback
-from flask import render_template, request, json
+from flask import render_template, request, json, redirect
 
 try:
     import flask_login as login
@@ -210,3 +210,40 @@ def get_script(project):
 @app.route('/blank.html')
 def blank_html():
     return ""
+
+
+@app.route('/debug/new', methods=['POST'])
+def new_project():
+    projectdb = app.config['projectdb']
+    project_name = request.form.get('project-name')
+    start_urls = request.form.get('start-urls')
+    script_mode = request.form.get('script-mode', 'script')
+
+    if not projectdb.verify_project_name(project_name):
+        return 'project name is not allowed!', 400
+
+    if projectdb.get(project_name):
+        return 'project already exists!', 400
+
+    script = (default_script
+              .replace('__DATE__', datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+              .replace('__PROJECT_NAME__', project_name)
+              .replace('__START_URL__', start_urls or '__START_URL__'))
+
+    info = {
+        'name': project_name,
+        'script': script,
+        'status': 'TODO',
+        'rate': app.config.get('max_rate', 1),
+        'burst': app.config.get('max_burst', 3),
+    }
+    projectdb.insert(project_name, info)
+
+    rpc = app.config['scheduler_rpc']
+    if rpc is not None:
+        try:
+            rpc.update_project()
+        except socket.error as e:
+            app.logger.warning('connect to scheduler rpc error: %r', e)
+
+    return redirect('/debug/' + project_name)
