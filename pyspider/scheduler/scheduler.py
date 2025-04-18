@@ -702,7 +702,7 @@ class Scheduler(object):
             },
         })
 
-    def xmlrpc_run(self, port=23333, bind='127.0.0.1', logRequests=False):
+    def xmlrpc_run(self, port=23333, bind='127.0.0.1', log_requests=False):
         '''Start xmlrpc interface'''
         from pyspider.libs.wsgi_xmlrpc import WSGIXMLRPCApplication
 
@@ -1169,9 +1169,16 @@ class OneScheduler(Scheduler):
 
     def run(self):
         import tornado.ioloop
-        # In Tornado 6.0+, io_loop parameter is removed
-        # and PeriodicCallback automatically uses the current IOLoop
-        tornado.ioloop.PeriodicCallback(self.run_once, 100).start()
+        import tornado
+        from distutils.version import LooseVersion
+
+        if LooseVersion(tornado.version) < LooseVersion('6.0'):
+            callback = tornado.ioloop.PeriodicCallback(self.run_once, 100,
+                                                     io_loop=self.ioloop)
+        else:
+            callback = tornado.ioloop.PeriodicCallback(self.run_once, 100)
+
+        callback.start()
         self.ioloop.start()
 
     def quit(self):

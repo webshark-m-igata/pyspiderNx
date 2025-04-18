@@ -61,12 +61,15 @@ def debug(project):
     return render_template("debug.html", task=task, script=script, project_name=project)
 
 
-# Initialize project finder when app is ready
+# Initialize projects import
+_projects_import_initialized = False
+
 @app.before_request
 def enable_projects_import():
-    if not hasattr(app, '_project_finder_installed') and app.config.get('projectdb'):
+    global _projects_import_initialized
+    if not _projects_import_initialized:
         sys.meta_path.append(ProjectFinder(app.config['projectdb']))
-        app._project_finder_installed = True
+        _projects_import_initialized = True
 
 
 @app.route('/debug/<project>/run', methods=['POST', ])
@@ -120,22 +123,7 @@ def run(project):
         # crawl_config = module['instance'].crawl_config
         # task = module['instance'].task_join_crawl_config(task, crawl_config)
 
-        # In Python 3.13, we need to handle fetch differently to avoid asyncio issues
-        try:
-            fetch_result = app.config['fetch'](task)
-        except Exception as e:
-            # If fetch fails, log the error and return an empty result
-            logs = 'Fetch failed: %s' % e
-            result = {
-                'fetch_result': {},
-                'logs': logs,
-                'follows': [],
-                'messages': [],
-                'result': None,
-                'time': time.time() - start_time,
-            }
-            return json.dumps(utils.unicode_obj(result)), \
-                200, {'Content-Type': 'application/json'}
+        fetch_result = app.config['fetch'](task)
         response = rebuild_response(fetch_result)
 
         ret = module['instance'].run_task(module['module'], task, response)

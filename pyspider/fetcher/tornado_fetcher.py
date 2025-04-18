@@ -45,6 +45,14 @@ logger = logging.getLogger('fetcher')
 
 
 class MyCurlAsyncHTTPClient(CurlAsyncHTTPClient):
+    def __init__(self, *args, **kwargs):
+        self.max_clients = kwargs.get('max_clients', 10)
+        # In Python 3.13, we need to use a different approach
+        # Call the parent class's __init__ method directly
+        # First, get the parent class's __init__ method
+        parent_init = CurlAsyncHTTPClient.__init__
+        # Then call it with self as the first argument
+        parent_init(self)
 
     def free_size(self):
         return len(self._free_list)
@@ -54,6 +62,14 @@ class MyCurlAsyncHTTPClient(CurlAsyncHTTPClient):
 
 
 class MySimpleAsyncHTTPClient(SimpleAsyncHTTPClient):
+    def __init__(self, *args, **kwargs):
+        self.max_clients = kwargs.get('max_clients', 10)
+        # In Python 3.13, we need to use a different approach
+        # Call the parent class's __init__ method directly
+        # First, get the parent class's __init__ method
+        parent_init = SimpleAsyncHTTPClient.__init__
+        # Then call it with self as the first argument
+        parent_init(self)
 
     def free_size(self):
         return self.max_clients - self.size()
@@ -118,7 +134,7 @@ class Fetcher(object):
         self.ssl_context.check_hostname = False
         self.ssl_context.verify_mode = ssl.CERT_NONE
         self.ssl_context.set_ciphers('DEFAULT:@SECLEVEL=1')
-        
+
         # requestsセッションの設定
         self.session = requests.Session()
         adapter = requests.adapters.HTTPAdapter(
@@ -131,7 +147,7 @@ class Fetcher(object):
         self.session.mount('https://', adapter)
         self.session.verify = False
 
-    def send_result(self, type, task, result):
+    def send_result(self, fetch_type, task, result):
         '''Send fetch result to processor'''
         if self.outqueue:
             try:
@@ -255,23 +271,23 @@ class Fetcher(object):
         if callback is None:
             callback = self.send_result
 
-        type = 'None'
+        fetch_type = 'None'
         start_time = time.time()
         try:
             if url.startswith('data:'):
-                type = 'data'
+                fetch_type = 'data'
                 result = yield gen.maybe_future(self.data_fetch(url, task))
             elif task.get('fetch', {}).get('fetch_type') in ('js', 'phantomjs'):
-                type = 'phantomjs'
+                fetch_type = 'phantomjs'
                 result = yield self.phantomjs_fetch(url, task)
             elif task.get('fetch', {}).get('fetch_type') in ('splash', ):
-                type = 'splash'
+                fetch_type = 'splash'
                 result = yield self.splash_fetch(url, task)
             elif task.get('fetch', {}).get('fetch_type') in ('puppeteer', ):
-                type = 'puppeteer'
+                fetch_type = 'puppeteer'
                 result = yield self.puppeteer_fetch(url, task)
             else:
-                type = 'http'
+                fetch_type = 'http'
                 # In Python 3.13, we need to handle http_fetch differently to avoid event loop issues
                 try:
                     # Create a Future that will be resolved by http_fetch
@@ -298,16 +314,16 @@ class Fetcher(object):
                     raise
         except Exception as e:
             logger.exception(e)
-            result = self.handle_error(type, url, task, start_time, e)
+            result = self.handle_error(fetch_type, url, task, start_time, e)
 
-        callback(type, task, result)
-        self.on_result(type, task, result)
+        callback(fetch_type, task, result)
+        self.on_result(fetch_type, task, result)
         raise gen.Return(result)
 
     def sync_fetch(self, task):
         '''Synchronization fetch, usually used in xmlrpc thread'''
         if not self._running:
-            return self.ioloop.run_sync(functools.partial(self.async_fetch, task, lambda t, _, r: True))
+            return self.ioloop.run_sync(functools.partial(self.async_fetch, task, lambda type_arg, _, result_arg: True))
 
         wait_result = threading.Condition()
         _result = {}
@@ -351,7 +367,7 @@ class Fetcher(object):
 
         return result
 
-    def handle_error(self, type, url, task, start_time, error):
+    def handle_error(self, fetch_type, url, task, start_time, error):
         result = {
             'status_code': getattr(error, 'code', 599),
             'error': utils.text(error),
@@ -1091,7 +1107,7 @@ class Fetcher(object):
     def size(self):
         return self.http_client.size()
 
-    def xmlrpc_run(self, port=24444, bind='127.0.0.1', logRequests=False):
+    def xmlrpc_run(self, port=24444, bind='127.0.0.1', log_requests=False):
         '''Run xmlrpc server'''
         import umsgpack
         from pyspider.libs.wsgi_xmlrpc import WSGIXMLRPCApplication
@@ -1126,19 +1142,19 @@ class Fetcher(object):
         logger.info('fetcher.xmlrpc listening on %s:%s', bind, port)
         self.xmlrpc_ioloop.start()
 
-    def on_fetch(self, type, task):
+    def on_fetch(self, fetch_type, task):
         '''Called before task fetch'''
-        logger.info('on fetch %s:%s', type, task)
+        logger.info('on fetch %s:%s', fetch_type, task)
 
-    def on_result(self, type, task, result):
+    def on_result(self, fetch_type, task, result):
         '''Called after task fetched'''
         status_code = result.get('status_code', 599)
         if status_code != 599:
-            status_code = (int(status_code) / 100 * 100)
+            status_code = (int(status_code) // 100 * 100)  # Use integer division for Python 3
         self._cnt['5m'].event((task.get('project'), status_code), +1)
         self._cnt['1h'].event((task.get('project'), status_code), +1)
 
-        if type in ('http', 'phantomjs') and result.get('time'):
+        if fetch_type in ('http', 'phantomjs') and result.get('time'):
             content_len = len(result.get('content', ''))
             self._cnt['5m'].event((task.get('project'), 'speed'),
                                   float(content_len) / result.get('time'))

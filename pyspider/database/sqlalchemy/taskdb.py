@@ -38,18 +38,19 @@ class TaskDB(SplitTableMixin, BaseTaskDB):
                            mysql_charset='utf8'
                            )
 
+        # Python 3.13 compatibility: URL objects are immutable
         self.url = make_url(url)
         if self.url.database:
             database = self.url.database
-            self.url.database = None
+            # Create a new URL without the database
+            url_without_db = self.url.set(database=None)
             try:
-                engine = create_engine(self.url, convert_unicode=True, pool_recycle=3600)
+                engine = create_engine(url_without_db, convert_unicode=True, pool_recycle=3600)
                 conn = engine.connect()
                 conn.execute("commit")
                 conn.execute("CREATE DATABASE %s" % database)
             except sqlalchemy.exc.SQLAlchemyError:
                 pass
-            self.url.database = database
         self.engine = create_engine(url, convert_unicode=True, pool_recycle=3600)
 
         self._list_project()

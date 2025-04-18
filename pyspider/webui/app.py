@@ -61,10 +61,8 @@ class QuitableFlask(Flask):
             logger.warning('WebDav interface not enabled: %r', e)
             dav_app = None
         if dav_app:
-            try:
-                from werkzeug.wsgi import DispatcherMiddleware
-            except ImportError:
-                from werkzeug.middleware.dispatcher import DispatcherMiddleware
+            # Python 3.13 compatibility: import DispatcherMiddleware from werkzeug.middleware.dispatcher
+            from werkzeug.middleware.dispatcher import DispatcherMiddleware
             application = DispatcherMiddleware(application, {
                 '/dav': dav_app
             })

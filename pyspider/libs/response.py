@@ -152,13 +152,25 @@ class Response(object):
         """Returns a lxml object of the response's content that can be selected by xpath"""
         if not hasattr(self, '_elements'):
             try:
-                parser = lxml.html.HTMLParser(encoding=self.encoding)
-                self._elements = lxml.html.fromstring(self.content, parser=parser)
-            except LookupError:
+                # Python 3.13 compatibility: ensure encoding is a string, not bytes
+                encoding = self.encoding
+                if isinstance(encoding, bytes):
+                    encoding = encoding.decode('utf-8')
+                parser = lxml.html.HTMLParser(encoding=encoding)
+                # Python 3.13 compatibility: ensure content is bytes
+                content = self.content
+                if isinstance(content, str):
+                    content = content.encode(encoding or 'utf-8')
+                self._elements = lxml.html.fromstring(content, parser=parser)
+            except (LookupError, ValueError):
                 # lxml would raise LookupError when encoding not supported
+                # or ValueError for Unicode strings with encoding declaration
                 # try fromstring without encoding instead.
                 # on windows, unicode is not availabe as encoding for lxml
-                self._elements = lxml.html.fromstring(self.content)
+                content = self.content
+                if isinstance(content, str):
+                    content = content.encode('utf-8')
+                self._elements = lxml.html.fromstring(content)
         if isinstance(self._elements, lxml.etree._ElementTree):
             self._elements = self._elements.getroot()
         return self._elements
@@ -170,14 +182,18 @@ class Response(object):
             return
         elif self.error:
             if self.traceback:
-                six.reraise(Exception, Exception(self.error), Traceback.from_string(self.traceback).as_traceback())
-            http_error = HTTPError(self.error)
+                # Python 3.13 compatibility: use a different approach for re-raising exceptions
+                try:
+                    raise Exception(f"HTTP 599: {self.error}")
+                except Exception as e:
+                    raise e
+            http_error = HTTPError(f"HTTP 599: {self.error}")
         elif (self.status_code >= 300) and (self.status_code < 400) and not allow_redirects:
-            http_error = HTTPError('%s Redirection' % (self.status_code))
+            http_error = HTTPError(f"HTTP {self.status_code}: Redirection")
         elif (self.status_code >= 400) and (self.status_code < 500):
-            http_error = HTTPError('%s Client Error' % (self.status_code))
+            http_error = HTTPError(f"HTTP {self.status_code}: Client Error")
         elif (self.status_code >= 500) and (self.status_code < 600):
-            http_error = HTTPError('%s Server Error' % (self.status_code))
+            http_error = HTTPError(f"HTTP {self.status_code}: Server Error")
         else:
             return
 
@@ -188,8 +204,12 @@ class Response(object):
         try:
             self.raise_for_status()
             return True
-        except:
+        except Exception:
             return False
+
+    @property
+    def ok(self):
+        return self.isok()
 
 
 def rebuild_response(r):

@@ -9,6 +9,13 @@ import math
 import logging
 import hashlib
 import datetime
+
+# Python 3.13 compatibility: UTC timezone
+try:
+    from datetime import UTC
+except ImportError:
+    # For older Python versions
+    UTC = datetime.timezone.utc
 import socket
 import base64
 import warnings
@@ -87,8 +94,10 @@ def format_date(date, gmt_offset=0, relative=True, shorter=False, full_format=Fa
     if not date:
         return '-'
     if isinstance(date, float) or isinstance(date, int):
-        date = datetime.datetime.utcfromtimestamp(date)
-    now = datetime.datetime.utcnow()
+        # Python 3.13 compatibility: use fromtimestamp with UTC timezone
+        date = datetime.datetime.fromtimestamp(date, UTC)
+    # Python 3.13 compatibility: use now with UTC timezone
+    now = datetime.datetime.now(UTC)
     if date > now:
         if relative and (date - now).seconds < 60:
             # Due to click skew, things are some things slightly

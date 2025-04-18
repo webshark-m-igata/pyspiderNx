@@ -1,11 +1,9 @@
 var webpack = require("webpack");
-var MiniCssExtractPlugin = require("mini-css-extract-plugin");
-var TerserPlugin = require("terser-webpack-plugin");
+var ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 module.exports = {
-  mode: 'production',
   entry: {
-    index: "./src/index.jsx",
+    index: "./src/index",
     debug: "./src/debug",
     result: "./src/result.less",
     task: "./src/task.less",
@@ -16,48 +14,14 @@ module.exports = {
     filename: "[name].min.js"
   },
   module: {
-    rules: [
-      {
-        test: /\.js$/,
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ['@babel/preset-env']
-          }
-        },
-        exclude: /node_modules/
-      },
-      {
-        test: /\.jsx$/,
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ['@babel/preset-env', '@babel/preset-react']
-          }
-        },
-        exclude: /node_modules/
-      },
-      {
-        test: /\.less$/,
-        use: [
-          MiniCssExtractPlugin.loader,
-          "css-loader",
-          "less-loader"
-        ]
-      }
+    loaders: [
+      { test: /\.js$/, loader: "babel-loader" },
+      { test: /\.less$/, loader: ExtractTextPlugin.extract("style-loader", "css-loader?sourceMap!less-loader?sourceMap") }
     ]
   },
-  resolve: {
-    extensions: ['.js', '.jsx']
-  },
   devtool: 'source-map',
-  optimization: {
-    minimize: true,
-    minimizer: [new TerserPlugin()],
-  },
   plugins: [
-    new MiniCssExtractPlugin({
-      filename: "[name].min.css"
-    })
+    new ExtractTextPlugin("[name].min.css"),
+    new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false } }),
   ]
 }
