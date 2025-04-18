@@ -9,9 +9,13 @@
 
     <meta name="description" content="pyspider dashboard">
     <meta name="author" content="binux">
-    <link href="{{ url_for('cdn', path='twitter-bootstrap/3.1.1/css/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Bootstrap 3.4.1 CSS (latest stable for Bootstrap 3) -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <!-- jQuery UI 1.13.2 CSS (latest stable) -->
+    <link href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css" rel="stylesheet">
     <link href="{{ url_for('cdn', path='x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css') }}" rel="stylesheet">
-    <link href="{{ url_for('cdn', path='sortable/0.6.0/css/sortable-theme-bootstrap.css') }}" rel="stylesheet">
+    <!-- Font Awesome 6 (latest) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='index.min.css') }}" rel="stylesheet">
 
     <!-- jQuery 3.7.1 (latest stable) -->
@@ -107,7 +111,7 @@
           </div>
         </div>
       </div>
-      <table class="table sortable-theme-bootstrap projects">
+      <table class="table projects">
         <thead>
           <tr>
             <th>group</th>
@@ -160,7 +164,7 @@
               {% endraw %}
               # if config.scheduler_rpc is not none:
               {% raw %}
-              <button class="project-run btn btn-default btn-xs" @click="project_run(project, $event)">Run</button>
+              <button class="project-run btn btn-default btn-xs">Run</button>
               <a class="btn btn-default btn-xs" :href="'/tasks?project=' + project.name" target=_blank>Active Tasks</a>
               {% endraw %}
               # endif
@@ -178,9 +182,26 @@
       // json projects data for vue
       window.projects = {{ projects | tojson | safe }};
     </script>
-    <script src="{{ url_for('cdn', path='twitter-bootstrap/3.1.1/js/bootstrap.min.js') }}"></script>
+    <!-- Bootstrap 3.4.1 JS (latest stable for Bootstrap 3) -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+    <!-- jQuery UI 1.13.2 (latest stable) -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
     <script src="{{ url_for('cdn', path='x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js') }}"></script>
-    <script src="{{ url_for('cdn', path='sortable/0.6.0/js/sortable.min.js') }}"></script>
+    <!-- X-Editable compatibility patch for jQuery 3.x -->
+    <script>
+      // Fix X-Editable compatibility with jQuery 3.x
+      $.fn.editableutils.setCursorPosition = function(elem, pos) {
+        if (elem.setSelectionRange) {
+          elem.setSelectionRange(pos, pos);
+        } else if (elem.createTextRange) {
+          var range = elem.createTextRange();
+          range.collapse(true);
+          range.moveEnd('character', pos);
+          range.moveStart('character', pos);
+          range.select();
+        }
+      };
+    </script>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3.2.47/dist/vue.global.js"></script>
     <!-- Vue.js 1 script -->

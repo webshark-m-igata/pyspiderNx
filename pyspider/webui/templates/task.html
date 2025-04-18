@@ -9,14 +9,22 @@
 
     <meta name="description" content="pyspider taskboard of {{ task.project }}:{{task.taskid }}">
     <meta name="author" content="binux">
-    <link href="{{ url_for('cdn', path='twitter-bootstrap/3.1.1/css/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- Bootstrap 3.4.1 CSS (latest stable for Bootstrap 3) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+    <!-- jQuery UI 1.13.2 CSS (latest stable) -->
+    <link href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css" rel="stylesheet">
+    <!-- Font Awesome 6 (latest) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='task.min.css') }}" rel="stylesheet">
 
     <!-- jQuery 3.7.1 (latest stable) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <!-- jQuery Migrate 3.4.1 (latest stable) -->
     <script src="https://code.jquery.com/jquery-migrate-3.4.1.min.js" integrity="sha256-UnTxHm+zKuDPLfufgEMnKGXDl6fEIjtM+n1Q6lL73ok=" crossorigin="anonymous"></script>
-    <script src="{{ url_for('cdn', path='twitter-bootstrap/3.1.1/js/bootstrap.min.js') }}"></script>
+    <!-- Bootstrap 3.4.1 JS (latest stable for Bootstrap 3) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/js/bootstrap.min.js" integrity="sha384-aJ21OjlMXNL5UyIl/XNwTMqvzeRMZH2w8c5cRVpzpU8Y5bApTppSuUkhZXN0VxHd" crossorigin="anonymous"></script>
+    <!-- jQuery UI 1.13.2 (latest stable) -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
   </head>
 
   <body>
@@ -49,7 +57,7 @@
           # if task.track and task.track.fetch
           <dt>
             track.fetch
-            <span class="glyphicon glyphicon-{{ "ok" if task.track.fetch.ok else "remove" }}"></span>
+            <i class="fas {{ "fa-check" if task.track.fetch.ok else "fa-times" }}"></i>
             {{ (task.track.fetch.time * 1000) | round(2) }}ms
           </dt>
           <dd>{{ json.dumps(task.track.fetch, indent=2, ensure_ascii=False) }}</dd>
@@ -58,7 +66,7 @@
           # if task.track and task.track.process
           <dt>
             track.process
-            <span class="glyphicon glyphicon-{{ "ok" if task.track.process.ok else "remove" }}"></span>
+            <i class="fas {{ "fa-check" if task.track.process.ok else "fa-times" }}"></i>
             {{ (task.track.process.time * 1000) | round(2) }}ms
             # if task.track.process.follows
               +{{ task.track.process.follows | int }}

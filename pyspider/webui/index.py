@@ -8,7 +8,7 @@
 import socket
 
 from six import iteritems, itervalues
-from flask import render_template, request, json
+from flask import render_template, request, json, redirect
 
 try:
     import flask_login as login
@@ -54,17 +54,17 @@ def project_update():
 
     project_info = projectdb.get(project, fields=('name', 'group'))
     if not project_info:
-        return "no such project.", 404
+        return json.dumps({"status": "error", "message": "no such project."}), 404, {'Content-Type': 'application/json'}
     if 'lock' in projectdb.split_group(project_info.get('group')) \
             and not login.current_user.is_active():
         return app.login_response
 
     if name not in ('group', 'status', 'rate'):
-        return 'unknown field: %s' % name, 400
+        return json.dumps({"status": "error", "message": 'unknown field: %s' % name}), 400, {'Content-Type': 'application/json'}
     if name == 'rate':
         value = value.split('/')
         if len(value) != 2:
-            return 'format error: rate/burst', 400
+            return json.dumps({"status": "error", "message": 'format error: rate/burst'}), 400, {'Content-Type': 'application/json'}
         rate = float(value[0])
         burst = float(value[1])
         update = {
@@ -84,11 +84,11 @@ def project_update():
                 rpc.update_project()
             except socket.error as e:
                 app.logger.warning('connect to scheduler rpc error: %r', e)
-                return 'rpc error', 200
-        return 'ok', 200
+                return json.dumps({"status": "error", "message": "rpc error"}), 200, {'Content-Type': 'application/json'}
+        return json.dumps({"status": "success"}), 200, {'Content-Type': 'application/json'}
     else:
         app.logger.warning("[webui index] projectdb.update() error - res: {}".format(ret))
-        return 'update error', 500
+        return json.dumps({"status": "error", "message": "update error"}), 500, {'Content-Type': 'application/json'}
 
 
 @app.route('/counter')
@@ -116,13 +116,13 @@ def counter():
 def runtask():
     rpc = app.config['scheduler_rpc']
     if rpc is None:
-        return json.dumps({})
+        return render_template("run_result.html", result=False, error="No scheduler_rpc available")
 
     projectdb = app.config['projectdb']
     project = request.form['project']
     project_info = projectdb.get(project, fields=('name', 'group'))
     if not project_info:
-        return "no such project.", 404
+        return render_template("run_result.html", result=False, error="No such project")
     if 'lock' in projectdb.split_group(project_info.get('group')) \
             and not login.current_user.is_active():
         return app.login_response
@@ -143,10 +143,16 @@ def runtask():
 
     try:
         ret = rpc.newtask(newtask)
+        app.logger.info("Run task for project %s, result: %s", project, ret)
     except socket.error as e:
         app.logger.warning('connect to scheduler rpc error: %r', e)
-        return json.dumps({"result": False}), 200, {'Content-Type': 'application/json'}
-    return json.dumps({"result": ret}), 200, {'Content-Type': 'application/json'}
+        return render_template("run_result.html", result=False, error="Connect to scheduler rpc error")
+    except Exception as e:
+        app.logger.error('Run task error: %r', e)
+        return render_template("run_result.html", result=False, error=str(e))
+
+    # Redirect back to the index page
+    return redirect('/')
 
 
 @app.route('/robots.txt')

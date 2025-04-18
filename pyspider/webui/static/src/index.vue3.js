@@ -46,19 +46,30 @@ document.addEventListener('DOMContentLoaded', function() {
       // Initialize editable fields
       this.initEditable();
 
-      // Initialize sortable tables
-      this.initSortable();
+      // Sortable.js has been removed
 
       // Start counter updates
       this.updateCounter();
 
       // Setup project creation form
       this.setupProjectForm();
+
+      // Bind run button click events using jQuery
+      this.bindRunButtons();
     },
     methods: {
       project_run(project, event) {
         console.log('Run button clicked for project:', project.name);
+        console.log('Event:', event);
+        console.log('Project status:', project.status);
+
+        // Ensure we have the correct button element
         var $this = $(event.target);
+        if (!$this.hasClass('project-run')) {
+          $this = $this.closest('.project-run');
+        }
+        console.log('Button element:', $this[0]);
+
         $this.addClass('btn-warning');
 
         // Check if project status is not RUNNING or DEBUG
@@ -88,40 +99,43 @@ document.addEventListener('DOMContentLoaded', function() {
           return;
         }
 
-        $.ajax({
-          type: "POST",
-          url: "/run",
-          data: {
-            project: project.name
-          },
-          success: function(data) {
-            console.log(data);
-            $this.removeClass('btn-warning');
-            if (data.result) {
-              $this.addClass('btn-success');
-              setTimeout(function() {
-                $this.removeClass('btn-success');
-              }, 1000);
-            } else {
-              $this.addClass('btn-danger');
-              setTimeout(function() {
-                $this.removeClass('btn-danger');
-              }, 1000);
-            }
-          },
-          error: function(xhr, textStatus, errorThrown) {
-            console.log(xhr, textStatus, errorThrown);
-            $this.removeClass('btn-warning');
-            $this.addClass('btn-danger');
-            setTimeout(function() {
-              $this.removeClass('btn-danger');
-            }, 1000);
-          }
-        });
+        console.log('Creating form for POST submission for project:', project.name);
+
+        // Create a form element
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/run';
+        form.style.display = 'none';
+
+        // Add project name input
+        const projectInput = document.createElement('input');
+        projectInput.type = 'hidden';
+        projectInput.name = 'project';
+        projectInput.value = project.name;
+        form.appendChild(projectInput);
+
+        // Add webdav_mode input
+        const webdavInput = document.createElement('input');
+        webdavInput.type = 'hidden';
+        webdavInput.name = 'webdav_mode';
+        webdavInput.value = 'false';
+        form.appendChild(webdavInput);
+
+        // Add the form to the document and submit it
+        document.body.appendChild(form);
+        form.submit();
+
+        // Show success indicator
+        $this.removeClass('btn-warning').addClass('btn-success');
+        setTimeout(function() {
+          $this.removeClass('btn-success');
+        }, 1000);
       },
 
       initEditable() {
         // Initialize x-editable for project fields
+        $.fn.editable.defaults.mode = 'popup';
+
         $(".project-group>span").editable({
           name: "group",
           pk: function() {
@@ -130,10 +144,37 @@ document.addEventListener('DOMContentLoaded', function() {
           emptytext: "[group]",
           placement: "right",
           url: "/update",
-          success: (response, newValue) => {
-            const projectName = $(this).parents("tr").data("name");
-            this.projects[projectName].group = newValue;
-            $(this).attr("style", "");
+          params: function(params) {
+            // Convert params to the format expected by the server
+            return {
+              pk: params.pk,
+              name: params.name,
+              value: params.value
+            };
+          },
+          success: function(response, newValue) {
+            try {
+              const projectName = $(this).parents("tr").data("name");
+              if (app && app.projects && app.projects[projectName]) {
+                app.projects[projectName].group = newValue;
+              }
+              $(this).attr("style", "");
+
+              // Ensure the spinner is hidden
+              $(this).closest('.editable-container').find('.editableform-loading').hide();
+              $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+              $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            } catch (e) {
+              console.error('Error in group update success callback:', e);
+            }
+          },
+          error: function(response, newValue) {
+            console.error('Group update error:', response);
+            // Handle error and ensure the spinner is hidden
+            $(this).closest('.editable-container').find('.editableform-loading').hide();
+            $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+            $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            return 'Error updating group. Please try again.';
           }
         });
 
@@ -153,14 +194,41 @@ document.addEventListener('DOMContentLoaded', function() {
           emptytext: "[status]",
           placement: "right",
           url: "/update",
+          params: function(params) {
+            // Convert params to the format expected by the server
+            return {
+              pk: params.pk,
+              name: params.name,
+              value: params.value
+            };
+          },
           success: function(response, newValue) {
-            const projectName = $(this).parents("tr").data("name");
-            app.projects[projectName].status = newValue;
-            $(this)
-              .removeClass("status-" + $(this).attr("data-value"))
-              .addClass("status-" + newValue)
-              .attr("data-value", newValue)
-              .attr("style", "");
+            try {
+              const projectName = $(this).parents("tr").data("name");
+              if (app && app.projects && app.projects[projectName]) {
+                app.projects[projectName].status = newValue;
+              }
+              $(this)
+                .removeClass("status-" + $(this).attr("data-value"))
+                .addClass("status-" + newValue)
+                .attr("data-value", newValue)
+                .attr("style", "");
+
+              // Ensure the spinner is hidden
+              $(this).closest('.editable-container').find('.editableform-loading').hide();
+              $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+              $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            } catch (e) {
+              console.error('Error in status update success callback:', e);
+            }
+          },
+          error: function(response, newValue) {
+            console.error('Status update error:', response);
+            // Handle error and ensure the spinner is hidden
+            $(this).closest('.editable-container').find('.editableform-loading').hide();
+            $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+            $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            return 'Error updating status. Please try again.';
           }
         });
 
@@ -182,27 +250,44 @@ document.addEventListener('DOMContentLoaded', function() {
           emptytext: "0/0",
           placement: "right",
           url: "/update",
+          params: function(params) {
+            // Convert params to the format expected by the server
+            return {
+              pk: params.pk,
+              name: params.name,
+              value: params.value
+            };
+          },
           success: function(response, newValue) {
-            const projectName = $(this).parents("tr").data("name");
-            const parts = newValue.split("/");
-            app.projects[projectName].rate = parseFloat(parts[0]);
-            app.projects[projectName].burst = parseFloat(parts[1]);
-            $(this).attr("style", "");
+            try {
+              const projectName = $(this).parents("tr").data("name");
+              if (app && app.projects && app.projects[projectName]) {
+                const parts = newValue.split("/");
+                app.projects[projectName].rate = parseFloat(parts[0]);
+                app.projects[projectName].burst = parseFloat(parts[1]);
+              }
+              $(this).attr("style", "");
+
+              // Ensure the spinner is hidden
+              $(this).closest('.editable-container').find('.editableform-loading').hide();
+              $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+              $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            } catch (e) {
+              console.error('Error in rate update success callback:', e);
+            }
+          },
+          error: function(response, newValue) {
+            console.error('Rate update error:', response);
+            // Handle error and ensure the spinner is hidden
+            $(this).closest('.editable-container').find('.editableform-loading').hide();
+            $(this).closest('.editable-container').find('.editable-submit').removeClass('disabled');
+            $(this).closest('.editable-container').find('.editable-cancel').removeClass('disabled');
+            return 'Error updating rate. Please try again.';
           }
         });
       },
 
-      initSortable() {
-        Sortable.getColumnType = function(table, index) {
-          var type = $($(table).find("th").get(index)).data("type");
-          return type == "num" ? Sortable.types.numeric :
-                 type == "date" ? Sortable.types.date :
-                 Sortable.types.alpha;
-        };
-
-        $("table.projects").attr("data-sortable", true);
-        Sortable.init();
-      },
+      // initSortable method has been removed
 
       updateCounter() {
         const updateCounters = () => {
@@ -261,6 +346,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
           }
           return true;
+        });
+      },
+
+      bindRunButtons() {
+        const self = this;
+        // Use jQuery to bind click events to run buttons
+        $(document).on('click', '.project-run', function(event) {
+          event.preventDefault();
+          const $button = $(this);
+          const projectName = $button.closest('tr').data('name');
+          const project = self.projects[projectName];
+
+          if (project) {
+            console.log('jQuery binding: Run button clicked for project:', projectName);
+            self.project_run(project, event);
+          } else {
+            console.error('Project not found:', projectName);
+          }
         });
       }
     }
