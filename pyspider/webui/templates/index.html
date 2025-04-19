@@ -211,6 +211,7 @@
               <a class="btn btn-default btn-xs" :href="'/tasks?project=' + project.name" target=_blank>Active Tasks</a>
               {% endraw %}
               {% endif %}
+              {% if config.resultdb %}
               {% raw %}
               <a class="btn btn-default btn-xs" :href="'/results?project=' + project.name" target=_blank>Results</a>
               {% endraw %}
